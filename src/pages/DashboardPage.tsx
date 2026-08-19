@@ -24,7 +24,7 @@ interface DashboardStats {
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [documents, setDocuments] = useState<(DocumentRecord & { analysis?: AnalysisResult[] })[]>([]);
+  const [documents, setDocuments] = useState<(DocumentRecord & { analysis_results?: AnalysisResult[] })[]>([]);
   const [stats, setStats] = useState<DashboardStats>({ totalDocuments: 0, totalEntities: 0, totalRelations: 0, totalEvents: 0 });
   const [loading, setLoading] = useState(true);
 
@@ -32,15 +32,15 @@ export default function DashboardPage() {
     async function loadData() {
       const { data } = await supabase
         .from('documents')
-        .select('*, analysis(*)')
+        .select('*, analysis_results(*)')
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (data) {
-        setDocuments(data as (DocumentRecord & { analysis?: AnalysisResult[] })[]);
+        setDocuments(data as (DocumentRecord & { analysis_results?: AnalysisResult[] })[]);
         let totalEntities = 0, totalRelations = 0, totalEvents = 0;
         data.forEach((doc) => {
-          const a = doc.analysis?.[0];
+          const a = doc.analysis_results?.[0];
           if (a) {
             totalEntities += (a.entities as unknown[]).length;
             totalRelations += (a.relations as unknown[]).length;
@@ -123,7 +123,7 @@ export default function DashboardPage() {
         ) : (
           <div className="divide-y divide-slate-100">
             {documents.map((doc) => {
-              const analysis = doc.analysis?.[0];
+              const analysis = doc.analysis_results?.[0];
               return (
                 <Link
                   key={doc.id}

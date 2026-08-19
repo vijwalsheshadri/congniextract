@@ -53,13 +53,13 @@ export default function ResultsPage() {
       if (!docId) return;
       const { data } = await supabase
         .from('documents')
-        .select('*, analysis(*)')
+        .select('*, analysis_results(*)')
         .eq('id', docId)
         .maybeSingle();
 
       if (data) {
         setDoc(data as DocumentRecord);
-        setAnalysis((data as unknown as { analysis: AnalysisResult[] }).analysis?.[0] ?? null);
+        setAnalysis((data as unknown as { analysis_results: AnalysisResult[] }).analysis_results?.[0] ?? null);
       }
       setLoading(false);
     }
