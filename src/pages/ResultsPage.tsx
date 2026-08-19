@@ -11,10 +11,10 @@ import {
   Loader2,
   Download,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import type { DocumentRecord, AnalysisResult, Entity, Relation, TimelineEvent, ExtractedEvent } from '@/types';
 import { BarChart, DonutChart } from '@/components/visualizations/Charts';
 import { exportToPdf } from '@/lib/export';
+import { loadDocumentWithAnalysis } from '@/lib/documents';
 
 const ENTITY_COLORS: Record<string, string> = {
   PERSON: '#0ea5e9',
@@ -51,15 +51,11 @@ export default function ResultsPage() {
   useEffect(() => {
     async function loadData() {
       if (!docId) return;
-      const { data } = await supabase
-        .from('documents')
-        .select('*, analysis_results(*)')
-        .eq('id', docId)
-        .maybeSingle();
+      const { data } = await loadDocumentWithAnalysis(docId);
 
       if (data) {
-        setDoc(data as DocumentRecord);
-        setAnalysis((data as unknown as { analysis_results: AnalysisResult[] }).analysis_results?.[0] ?? null);
+        setDoc(data);
+        setAnalysis(data.analysis?.[0] ?? null);
       }
       setLoading(false);
     }

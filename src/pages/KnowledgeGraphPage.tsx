@@ -8,8 +8,8 @@ import {
   ZoomOut,
   Maximize,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import type { DocumentRecord, AnalysisResult, Entity, Relation } from '@/types';
+import type { DocumentWithAnalysis, AnalysisResult, Entity, Relation } from '@/types';
+import { loadDocumentsWithAnalysis } from '@/lib/documents';
 
 interface GraphNode {
   id: string;
@@ -37,7 +37,7 @@ const ENTITY_COLORS: Record<string, string> = {
 };
 
 export default function KnowledgeGraphPage() {
-  const [documents, setDocuments] = useState<(DocumentRecord & { analysis_results?: AnalysisResult[] })[]>([]);
+  const [documents, setDocuments] = useState<DocumentWithAnalysis[]>([]);
   const [selectedDoc, setSelectedDoc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [zoom, setZoom] = useState(1);
@@ -46,14 +46,11 @@ export default function KnowledgeGraphPage() {
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from('documents')
-        .select('*, analysis_results(*)')
-        .order('created_at', { ascending: false });
+      const { data } = await loadDocumentsWithAnalysis();
 
       if (data) {
-        setDocuments(data as (DocumentRecord & { analysis_results?: AnalysisResult[] })[]);
-        if (data.length > 0 && data[0].analysis_results?.[0]) {
+        setDocuments(data);
+        if (data.length > 0 && data[0].analysis?.[0]) {
           setSelectedDoc(data[0].id);
         }
       }
@@ -63,7 +60,7 @@ export default function KnowledgeGraphPage() {
   }, []);
 
   const currentDoc = documents.find((d) => d.id === selectedDoc);
-  const currentAnalysis = currentDoc?.analysis_results?.[0];
+  const currentAnalysis = currentDoc?.analysis?.[0];
 
   const [nodes, setNodes] = useState<GraphNode[]>([]);
   const [edges, setEdges] = useState<GraphEdge[]>([]);
@@ -216,7 +213,7 @@ export default function KnowledgeGraphPage() {
               <button
                 key={d.id}
                 onClick={() => setSelectedDoc(d.id)}
-                disabled={!d.analysis_results?.[0]}
+                disabled={!d.analysis?.[0]}
                 className={`w-full text-left px-3 py-2 rounded-lg text-sm mb-1 transition-colors ${
                   selectedDoc === d.id
                     ? 'bg-teal-50 text-teal-700 font-semibold'

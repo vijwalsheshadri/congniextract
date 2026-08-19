@@ -10,9 +10,9 @@ import {
   ArrowRight,
   Loader2,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/context/AuthContext';
-import type { DocumentRecord, AnalysisResult } from '@/types';
+import type { DocumentWithAnalysis } from '@/types';
+import { loadDocumentsWithAnalysis } from '@/lib/documents';
 
 interface DashboardStats {
   totalDocuments: number;
@@ -24,23 +24,19 @@ interface DashboardStats {
 export default function DashboardPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [documents, setDocuments] = useState<(DocumentRecord & { analysis_results?: AnalysisResult[] })[]>([]);
+  const [documents, setDocuments] = useState<DocumentWithAnalysis[]>([]);
   const [stats, setStats] = useState<DashboardStats>({ totalDocuments: 0, totalEntities: 0, totalRelations: 0, totalEvents: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
-      const { data } = await supabase
-        .from('documents')
-        .select('*, analysis_results(*)')
-        .order('created_at', { ascending: false })
-        .limit(10);
+      const { data } = await loadDocumentsWithAnalysis(10);
 
       if (data) {
-        setDocuments(data as (DocumentRecord & { analysis_results?: AnalysisResult[] })[]);
+        setDocuments(data);
         let totalEntities = 0, totalRelations = 0, totalEvents = 0;
         data.forEach((doc) => {
-          const a = doc.analysis_results?.[0];
+          const a = doc.analysis?.[0];
           if (a) {
             totalEntities += (a.entities as unknown[]).length;
             totalRelations += (a.relations as unknown[]).length;
@@ -123,7 +119,7 @@ export default function DashboardPage() {
         ) : (
           <div className="divide-y divide-slate-100">
             {documents.map((doc) => {
-              const analysis = doc.analysis_results?.[0];
+              const analysis = doc.analysis?.[0];
               return (
                 <Link
                   key={doc.id}

@@ -8,31 +8,28 @@ import {
   Clock,
   ArrowRight,
 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import type { DocumentRecord, AnalysisResult } from '@/types';
+import type { DocumentWithAnalysis, AnalysisResult } from '@/types';
 import { exportToPdf } from '@/lib/export';
+import { loadDocumentsWithAnalysis } from '@/lib/documents';
 
 export default function ReportsPage() {
-  const [documents, setDocuments] = useState<(DocumentRecord & { analysis_results?: AnalysisResult[] })[]>([]);
+  const [documents, setDocuments] = useState<DocumentWithAnalysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
-      const { data } = await supabase
-        .from('documents')
-        .select('*, analysis_results(*)')
-        .order('created_at', { ascending: false });
+      const { data } = await loadDocumentsWithAnalysis();
       if (data) {
-        setDocuments(data as (DocumentRecord & { analysis_results?: AnalysisResult[] })[]);
+        setDocuments(data);
       }
       setLoading(false);
     }
     load();
   }, []);
 
-  const handleExport = (doc: DocumentRecord & { analysis_results?: AnalysisResult[] }) => {
-    const analysis = doc.analysis_results?.[0];
+  const handleExport = (doc: DocumentWithAnalysis) => {
+    const analysis = doc.analysis?.[0];
     if (!analysis) return;
     setExporting(doc.id);
     try {
@@ -70,7 +67,7 @@ export default function ReportsPage() {
       ) : (
         <div className="space-y-3">
           {documents.map((doc) => {
-            const analysis = doc.analysis_results?.[0];
+            const analysis = doc.analysis?.[0];
             const summary = analysis?.summary;
             return (
               <div
